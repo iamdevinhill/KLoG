@@ -22,6 +22,7 @@ NEO4J_URI = os.getenv("NEO4J_URI", "bolt://localhost:7687")
 NEO4J_USER = os.getenv("NEO4J_USER", "neo4j")
 NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD", "neo4jpassword")
 JWT_SECRET = os.getenv("JWT_SECRET", "kg_log_secret_change_me_in_production")
+OLLAMA_BASE = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
 driver = None
 
@@ -444,7 +445,7 @@ async def list_ollama_models():
     """Fetch available models from local Ollama instance."""
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            res = await client.get("http://localhost:11434/api/tags")
+            res = await client.get(f"{OLLAMA_BASE}/api/tags")
             data = res.json()
             models = [m["name"] for m in data.get("models", [])]
             return {"models": models}
@@ -470,7 +471,7 @@ async def ask_question(req: AskRequest, username: str = Depends(get_current_user
         async with httpx.AsyncClient(timeout=120.0) as client:
             async with client.stream(
                 "POST",
-                "http://localhost:11434/api/chat",
+                f"{OLLAMA_BASE}/api/chat",
                 json={
                     "model": ollama_model,
                     "messages": messages,

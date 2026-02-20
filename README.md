@@ -17,7 +17,7 @@ A knowledge graph note-taking app with a 3D graph view, multi-provider AI assist
 
 ```bash
 # Clone the repo
-git clone <repo-url> && cd kg_log
+git clone https://github.com/iamdevinhill/kg_log.git && cd kg_log
 
 # Start the stack
 docker compose up -d --build
