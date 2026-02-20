@@ -1,0 +1,1719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KG Log</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0a0a0f;
+  --bg-secondary: #12121a;
+  --bg-tertiary: #1a1a2e;
+  --text: #e0e0e8;
+  --text-dim: #8888a0;
+  --accent: #00e5ff;
+  --accent2: #b040ff;
+  --border: #2a2a40;
+  --hover: #222240;
+  --error: #ff4466;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* --- Auth screen --- */
+#auth-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: var(--bg);
+}
+
+#auth-box {
+  width: 360px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 40px 32px;
+}
+
+#auth-box h1 {
+  text-align: center;
+  color: var(--accent);
+  font-size: 28px;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+
+#auth-box .auth-subtitle {
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 13px;
+  margin-bottom: 28px;
+}
+
+#auth-tabs {
+  display: flex;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 10px;
+  text-align: center;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 14px;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.auth-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.auth-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+  margin-bottom: 14px;
+}
+
+.auth-input:focus { border-color: var(--accent); }
+
+#auth-submit {
+  width: 100%;
+  padding: 11px;
+  background: var(--accent);
+  border: none;
+  border-radius: 6px;
+  color: var(--bg);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+#auth-submit:hover { opacity: 0.85; }
+
+#auth-error {
+  color: var(--error);
+  font-size: 12px;
+  text-align: center;
+  margin-top: 12px;
+  min-height: 18px;
+}
+
+/* --- App (hidden until logged in) --- */
+#app {
+  display: none;
+  height: 100vh;
+}
+
+#app.visible { display: flex; }
+
+/* --- Sidebar --- */
+#sidebar {
+  width: 260px;
+  min-width: 260px;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#sidebar-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+#sidebar-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+#sidebar-header h1 {
+  font-size: 18px;
+  color: var(--accent);
+  letter-spacing: 1px;
+}
+
+#logout-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+#logout-btn:hover { border-color: var(--error); color: var(--error); }
+
+#search-input {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+}
+
+#search-input:focus { border-color: var(--accent); }
+
+#sidebar-actions {
+  padding: 8px 16px;
+  display: flex;
+  gap: 8px;
+}
+
+.sidebar-btn {
+  flex: 1;
+  padding: 6px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.sidebar-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+#page-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.page-item {
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.15s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.page-item:hover { background: var(--hover); }
+.page-item.active { background: var(--bg-tertiary); color: var(--accent); }
+
+/* --- Main area --- */
+#main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#toolbar {
+  display: flex;
+  align-items: center;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border);
+  gap: 10px;
+  background: var(--bg-secondary);
+}
+
+#page-title-display {
+  font-size: 20px;
+  font-weight: 600;
+  flex: 1;
+  color: var(--text);
+}
+
+.toolbar-btn {
+  padding: 6px 14px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.toolbar-btn:hover { border-color: var(--accent); color: var(--accent); }
+.toolbar-btn.active { border-color: var(--accent2); color: var(--accent2); }
+
+#editor-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#editor-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+#block-editor {
+  min-height: 300px;
+}
+
+.block-line {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 2px;
+  position: relative;
+}
+
+.block-bullet {
+  color: var(--text-dim);
+  margin-right: 8px;
+  margin-top: 7px;
+  font-size: 8px;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.block-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  padding: 4px 0;
+  outline: none;
+  resize: none;
+  line-height: 1.6;
+  overflow: hidden;
+}
+
+.block-input::placeholder { color: var(--text-dim); }
+
+.block-ai-response {
+  margin-left: 24px;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border-left: 2px solid var(--accent2);
+  border-radius: 0 6px 6px 0;
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+  white-space: pre-wrap;
+}
+
+/* Wikilink highlighting overlay */
+.block-highlight-overlay {
+  position: absolute;
+  left: 22px;
+  top: 0;
+  pointer-events: none;
+  font-size: 14px;
+  font-family: inherit;
+  line-height: 1.6;
+  padding: 4px 0;
+  white-space: pre-wrap;
+  color: transparent;
+}
+
+.wikilink-highlight {
+  color: var(--accent);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+/* --- Backlinks panel --- */
+#backlinks-panel {
+  border-top: 1px solid var(--border);
+  padding: 12px 20px;
+  background: var(--bg-secondary);
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+#backlinks-panel h3 {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.backlink-item {
+  display: inline-block;
+  padding: 4px 10px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  font-size: 12px;
+  margin: 2px 4px 2px 0;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.backlink-item:hover { border-color: var(--accent); color: var(--accent); }
+
+/* --- Graph view --- */
+#graph-container {
+  display: none;
+  flex: 1;
+  position: relative;
+  background: var(--bg);
+}
+
+#graph-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+#graph-tooltip {
+  display: none;
+  position: absolute;
+  background: var(--bg-secondary);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  pointer-events: none;
+  z-index: 100;
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.2);
+}
+
+#graph-tooltip .tooltip-title { color: var(--accent); font-weight: 600; }
+#graph-tooltip .tooltip-count { color: var(--text-dim); font-size: 11px; }
+
+#vr-button {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  padding: 10px 20px;
+  background: var(--accent2);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+  z-index: 50;
+  display: none;
+}
+
+#vr-button:hover { opacity: 0.85; }
+
+/* --- AI Chat Panel --- */
+#ai-panel {
+  width: 0;
+  min-width: 0;
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width 0.3s, min-width 0.3s;
+}
+
+#ai-panel.open {
+  width: 350px;
+  min-width: 350px;
+}
+
+#ai-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#ai-header h3 {
+  font-size: 14px;
+  color: var(--accent2);
+}
+
+#ai-close {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 18px;
+}
+
+#ai-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.ai-message {
+  margin-bottom: 12px;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ai-message.user {
+  background: var(--bg-tertiary);
+  color: var(--accent);
+}
+
+.ai-message.assistant {
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+.ai-context {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+
+.ai-loading {
+  display: inline-flex;
+  gap: 4px;
+  padding: 6px 0;
+}
+
+.ai-loading span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent2);
+  animation: ai-bounce 1.2s infinite ease-in-out;
+}
+
+.ai-loading span:nth-child(2) { animation-delay: 0.15s; }
+.ai-loading span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes ai-bounce {
+  0%, 80%, 100% { opacity: 0.25; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1.2); }
+}
+
+#ai-input-area {
+  padding: 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+}
+
+#ai-input {
+  flex: 1;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+}
+
+#ai-input:focus { border-color: var(--accent2); }
+
+/* AI Settings */
+#ai-settings {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+
+#ai-settings-toggle {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 0;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+#ai-settings-toggle:hover { color: var(--text); }
+
+#ai-settings-body { display: none; }
+#ai-settings-body.open { display: block; }
+
+#ai-settings label {
+  display: block;
+  color: var(--text-dim);
+  font-size: 11px;
+  margin-bottom: 4px;
+  margin-top: 8px;
+}
+
+#ai-settings label:first-child { margin-top: 0; }
+
+.ai-settings-select, .ai-settings-input {
+  width: 100%;
+  padding: 6px 10px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 12px;
+  outline: none;
+}
+
+.ai-settings-select:focus, .ai-settings-input:focus { border-color: var(--accent2); }
+
+.ai-settings-input[type="password"] { letter-spacing: 2px; }
+
+#ai-provider-status {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 6px;
+  padding: 4px 8px;
+  background: var(--bg);
+  border-radius: 4px;
+}
+
+#ai-send {
+  padding: 8px 14px;
+  background: var(--accent2);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+</style>
+</head>
+<body>
+
+<!-- Auth Screen -->
+<div id="auth-screen">
+  <div id="auth-box">
+    <h1>KG LOG</h1>
+    <div class="auth-subtitle">Knowledge Graph Note-Taking</div>
+    <div id="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">Log In</button>
+      <button class="auth-tab" onclick="switchAuthTab('signup')">Sign Up</button>
+    </div>
+    <input type="text" class="auth-input" id="auth-username" placeholder="Username" autocomplete="username">
+    <input type="password" class="auth-input" id="auth-password" placeholder="Password" autocomplete="current-password">
+    <button id="auth-submit" onclick="submitAuth()">Log In</button>
+    <div id="auth-error"></div>
+  </div>
+</div>
+
+<!-- Main App -->
+<div id="app">
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <div id="sidebar-header">
+      <div id="sidebar-header-top">
+        <h1>KG LOG</h1>
+        <button id="logout-btn" onclick="logout()">Log out</button>
+      </div>
+      <input type="text" id="search-input" placeholder="Search pages...">
+    </div>
+    <div id="sidebar-actions">
+      <button class="sidebar-btn" onclick="createNewPage()">+ New Page</button>
+      <button class="sidebar-btn" onclick="openToday()">Today</button>
+    </div>
+    <div id="page-list"></div>
+  </div>
+
+  <!-- Main Content -->
+  <div id="main">
+    <div id="toolbar">
+      <div id="page-title-display">Loading...</div>
+      <button class="toolbar-btn" id="graph-toggle" onclick="toggleGraphView()">Graph View</button>
+      <button class="toolbar-btn" id="ai-toggle" onclick="toggleAIPanel()">AI Chat</button>
+      <button class="toolbar-btn" onclick="savePage()">Save</button>
+      <button class="toolbar-btn" onclick="deletePage()">Delete</button>
+    </div>
+
+    <!-- Editor view -->
+    <div id="editor-container">
+      <div id="editor-scroll">
+        <div id="block-editor"></div>
+      </div>
+      <div id="backlinks-panel">
+        <h3>Backlinks</h3>
+        <div id="backlinks-list"></div>
+      </div>
+    </div>
+
+    <!-- Graph view -->
+    <div id="graph-container">
+      <div id="graph-tooltip">
+        <div class="tooltip-title"></div>
+        <div class="tooltip-count"></div>
+      </div>
+      <button id="vr-button" onclick="enterVR()">Enter VR</button>
+    </div>
+  </div>
+
+  <!-- AI Chat Panel -->
+  <div id="ai-panel">
+    <div id="ai-header">
+      <h3>AI Assistant</h3>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button id="ai-clear" onclick="clearAIChat()" style="background:none;border:1px solid var(--border);color:var(--text-dim);cursor:pointer;border-radius:4px;padding:2px 8px;font-size:12px;">Clear</button>
+        <button id="ai-close" onclick="toggleAIPanel()">&times;</button>
+      </div>
+    </div>
+    <div id="ai-settings">
+      <button id="ai-settings-toggle" onclick="toggleAISettings()">
+        <span id="ai-settings-arrow">&#9654;</span> Settings
+      </button>
+      <div id="ai-settings-body">
+        <label>Provider</label>
+        <select class="ai-settings-select" id="ai-provider" onchange="onProviderChange()">
+          <option value="ollama">Ollama (Local)</option>
+          <option value="openai">ChatGPT (OpenAI)</option>
+          <option value="anthropic">Claude (Anthropic)</option>
+        </select>
+
+        <div id="ai-apikey-row" style="display:none;">
+          <label>API Key</label>
+          <input type="password" class="ai-settings-input" id="ai-apikey" placeholder="sk-..." onchange="saveAISettings()">
+        </div>
+
+        <div id="ai-model-row">
+          <label>Model</label>
+          <select class="ai-settings-select" id="ai-model-select" onchange="saveAISettings()">
+            <option value="">Loading...</option>
+          </select>
+        </div>
+
+        <div id="ai-provider-status"></div>
+      </div>
+    </div>
+    <div id="ai-messages"></div>
+    <div id="ai-input-area">
+      <input type="text" id="ai-input" placeholder="Ask a question..." onkeydown="if(event.key==='Enter')sendAIChat()">
+      <button id="ai-send" onclick="sendAIChat()">Send</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================
+// Auth
+// ============================================
+const API = window.location.origin;
+let authToken = localStorage.getItem('kg_token');
+let authUser = localStorage.getItem('kg_user');
+let authMode = 'login'; // or 'signup'
+
+function authHeaders() {
+  return authToken ? { 'Authorization': 'Bearer ' + authToken } : {};
+}
+
+function authedFetch(url, options = {}) {
+  options.headers = { ...authHeaders(), ...(options.headers || {}) };
+  return fetch(url, options).then(res => {
+    if (res.status === 401) { logout(); throw new Error('Unauthorized'); }
+    return res;
+  });
+}
+
+function switchAuthTab(mode) {
+  authMode = mode;
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.auth-tab')[mode === 'login' ? 0 : 1].classList.add('active');
+  document.getElementById('auth-submit').textContent = mode === 'login' ? 'Log In' : 'Sign Up';
+  document.getElementById('auth-password').autocomplete = mode === 'login' ? 'current-password' : 'new-password';
+  document.getElementById('auth-error').textContent = '';
+}
+
+async function submitAuth() {
+  const username = document.getElementById('auth-username').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const errorEl = document.getElementById('auth-error');
+  errorEl.textContent = '';
+
+  if (!username || !password) { errorEl.textContent = 'Please fill in both fields.'; return; }
+
+  try {
+    const endpoint = authMode === 'login' ? '/login' : '/signup';
+    const res = await fetch(`${API}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      errorEl.textContent = data.detail || 'Something went wrong.';
+      return;
+    }
+    const data = await res.json();
+    authToken = data.token;
+    authUser = data.username;
+    localStorage.setItem('kg_token', authToken);
+    localStorage.setItem('kg_user', authUser);
+    showApp();
+  } catch (e) {
+    errorEl.textContent = 'Connection error. Is the server running?';
+  }
+}
+
+function logout() {
+  authToken = null;
+  authUser = null;
+  localStorage.removeItem('kg_token');
+  localStorage.removeItem('kg_user');
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('auth-username').value = '';
+  document.getElementById('auth-password').value = '';
+  document.getElementById('auth-error').textContent = '';
+}
+
+function showApp() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+  loadPageList();
+  openToday();
+}
+
+// Enter key on auth inputs
+document.addEventListener('DOMContentLoaded', () => {
+  ['auth-username', 'auth-password'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => {
+      if (e.key === 'Enter') submitAuth();
+    });
+  });
+});
+
+// ============================================
+// State
+// ============================================
+let currentPage = null;
+let allPages = [];
+let graphViewActive = false;
+let graphScene, graphCamera, graphRenderer, graphControls;
+let graphNodes3D = [], graphEdges3D = [];
+let graphSimNodes = [], graphSimEdges = [];
+let graphAnimId = null;
+let graphRaycaster, graphMouse;
+let hoveredNode = null;
+let xrSession = null;
+let vrInfoPanels = [];
+
+// ============================================
+// Page Management
+// ============================================
+
+async function loadPageList() {
+  try {
+    const res = await authedFetch(`${API}/pages`);
+    allPages = await res.json();
+    renderPageList(allPages);
+  } catch (e) {
+    console.error('Failed to load pages:', e);
+  }
+}
+
+function renderPageList(pages) {
+  const list = document.getElementById('page-list');
+  list.innerHTML = '';
+  pages.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'page-item' + (currentPage === p.title ? ' active' : '');
+    div.textContent = p.title;
+    div.onclick = () => openPage(p.title);
+    list.appendChild(div);
+  });
+}
+
+async function openPage(title) {
+  try {
+    const res = await authedFetch(`${API}/pages/${encodeURIComponent(title)}`);
+    if (res.status === 404) {
+      await authedFetch(`${API}/pages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, content: '' }),
+      });
+      return openPage(title);
+    }
+    const page = await res.json();
+    currentPage = page.title;
+    document.getElementById('page-title-display').textContent = page.title;
+    renderBlocks(page.content);
+    renderBacklinks(page.backlinks);
+    renderPageList(filterPages());
+
+    if (graphViewActive) toggleGraphView();
+  } catch (e) {
+    console.error('Failed to open page:', e);
+  }
+}
+
+function renderBlocks(content) {
+  const editor = document.getElementById('block-editor');
+  editor.innerHTML = '';
+  const lines = content ? content.split('\n') : [''];
+  lines.forEach((line, i) => addBlockLine(line, i === 0));
+}
+
+function addBlockLine(text = '', focus = false) {
+  const editor = document.getElementById('block-editor');
+  const wrapper = document.createElement('div');
+  wrapper.className = 'block-line';
+
+  const bullet = document.createElement('span');
+  bullet.className = 'block-bullet';
+  bullet.textContent = '\u25CF';
+
+  const input = document.createElement('textarea');
+  input.className = 'block-input';
+  input.value = text;
+  input.rows = 1;
+  input.placeholder = 'Type here...';
+  input.addEventListener('input', () => autoResize(input));
+  input.addEventListener('keydown', handleBlockKeydown);
+
+  wrapper.appendChild(bullet);
+  wrapper.appendChild(input);
+  editor.appendChild(wrapper);
+
+  autoResize(input);
+  if (focus) input.focus();
+}
+
+function autoResize(textarea) {
+  textarea.style.height = 'auto';
+  textarea.style.height = textarea.scrollHeight + 'px';
+}
+
+function handleBlockKeydown(e) {
+  const textarea = e.target;
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    const text = textarea.value.trim();
+
+    // /ask inline AI
+    if (text.startsWith('/ask ')) {
+      const question = text.substring(5).trim();
+      if (question) askInline(textarea, question);
+      return;
+    }
+
+    // Insert new block after current
+    const allBlocks = [...document.querySelectorAll('.block-input')];
+    const idx = allBlocks.indexOf(textarea);
+    const newWrapper = document.createElement('div');
+    newWrapper.className = 'block-line';
+    const bullet = document.createElement('span');
+    bullet.className = 'block-bullet';
+    bullet.textContent = '\u25CF';
+    const newInput = document.createElement('textarea');
+    newInput.className = 'block-input';
+    newInput.rows = 1;
+    newInput.placeholder = 'Type here...';
+    newInput.addEventListener('input', () => autoResize(newInput));
+    newInput.addEventListener('keydown', handleBlockKeydown);
+    newWrapper.appendChild(bullet);
+    newWrapper.appendChild(newInput);
+
+    const currentWrapper = textarea.closest('.block-line');
+    const nextEl = currentWrapper.nextSibling;
+    const insertBefore = nextEl && nextEl.classList && nextEl.classList.contains('block-ai-response')
+      ? nextEl.nextSibling : nextEl;
+    currentWrapper.parentNode.insertBefore(newWrapper, insertBefore);
+    autoResize(newInput);
+    newInput.focus();
+  }
+
+  if (e.key === 'Backspace' && textarea.value === '') {
+    e.preventDefault();
+    const allBlocks = [...document.querySelectorAll('.block-input')];
+    if (allBlocks.length <= 1) return;
+    const idx = allBlocks.indexOf(textarea);
+    const wrapper = textarea.closest('.block-line');
+    wrapper.remove();
+    const remaining = [...document.querySelectorAll('.block-input')];
+    if (remaining[idx - 1]) remaining[idx - 1].focus();
+    else if (remaining[0]) remaining[0].focus();
+  }
+
+  if (e.key === 'ArrowUp' && textarea.selectionStart === 0) {
+    const allBlocks = [...document.querySelectorAll('.block-input')];
+    const idx = allBlocks.indexOf(textarea);
+    if (idx > 0) allBlocks[idx - 1].focus();
+  }
+  if (e.key === 'ArrowDown' && textarea.selectionStart === textarea.value.length) {
+    const allBlocks = [...document.querySelectorAll('.block-input')];
+    const idx = allBlocks.indexOf(textarea);
+    if (idx < allBlocks.length - 1) allBlocks[idx + 1].focus();
+  }
+
+  if (e.key === 's' && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    savePage();
+  }
+}
+
+function getEditorContent() {
+  const blocks = document.querySelectorAll('.block-input');
+  return [...blocks].map(b => b.value).join('\n');
+}
+
+async function savePage() {
+  if (!currentPage) return;
+  const content = getEditorContent();
+  try {
+    await authedFetch(`${API}/pages/${encodeURIComponent(currentPage)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content }),
+    });
+    await loadPageList();
+    const res = await authedFetch(`${API}/pages/${encodeURIComponent(currentPage)}`);
+    const page = await res.json();
+    renderBacklinks(page.backlinks);
+  } catch (e) {
+    console.error('Failed to save:', e);
+  }
+}
+
+async function deletePage() {
+  if (!currentPage) return;
+  if (!confirm(`Delete "${currentPage}"?`)) return;
+  try {
+    await authedFetch(`${API}/pages/${encodeURIComponent(currentPage)}`, { method: 'DELETE' });
+    currentPage = null;
+    await loadPageList();
+    openToday();
+  } catch (e) {
+    console.error('Failed to delete:', e);
+  }
+}
+
+function createNewPage() {
+  const title = prompt('Page title:');
+  if (!title) return;
+  openPage(title.trim());
+}
+
+function openToday() {
+  const d = new Date();
+  const title = d.toISOString().split('T')[0];
+  openPage(title);
+}
+
+function renderBacklinks(backlinks) {
+  const list = document.getElementById('backlinks-list');
+  list.innerHTML = '';
+  if (!backlinks || backlinks.length === 0) {
+    list.innerHTML = '<span style="color:var(--text-dim);font-size:12px;">No backlinks</span>';
+    return;
+  }
+  backlinks.forEach(b => {
+    const span = document.createElement('span');
+    span.className = 'backlink-item';
+    span.textContent = b;
+    span.onclick = () => openPage(b);
+    list.appendChild(span);
+  });
+}
+
+// --- Search ---
+document.getElementById('search-input').addEventListener('input', (e) => {
+  renderPageList(filterPages());
+});
+
+function filterPages() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  if (!q) return allPages;
+  return allPages.filter(p => p.title.toLowerCase().includes(q));
+}
+
+// ============================================
+// 3D Graph View (Phase 2)
+// ============================================
+
+function toggleGraphView() {
+  graphViewActive = !graphViewActive;
+  const editorEl = document.getElementById('editor-container');
+  const graphEl = document.getElementById('graph-container');
+  const btn = document.getElementById('graph-toggle');
+
+  if (graphViewActive) {
+    editorEl.style.display = 'none';
+    graphEl.style.display = 'block';
+    btn.classList.add('active');
+    initGraph();
+  } else {
+    editorEl.style.display = 'flex';
+    graphEl.style.display = 'none';
+    btn.classList.remove('active');
+    stopGraph();
+  }
+}
+
+async function initGraph() {
+  const container = document.getElementById('graph-container');
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+
+  stopGraph();
+
+  graphScene = new THREE.Scene();
+  graphScene.background = new THREE.Color(0x0a0a0f);
+
+  graphCamera = new THREE.PerspectiveCamera(60, width / height, 0.1, 2000);
+  graphCamera.position.set(0, 0, 200);
+
+  graphRenderer = new THREE.WebGLRenderer({ antialias: true });
+  graphRenderer.setSize(width, height);
+  graphRenderer.setPixelRatio(window.devicePixelRatio);
+  graphRenderer.xr.enabled = true;
+  container.appendChild(graphRenderer.domElement);
+
+  graphControls = new THREE.OrbitControls(graphCamera, graphRenderer.domElement);
+  graphControls.enableDamping = true;
+  graphControls.dampingFactor = 0.1;
+
+  graphRaycaster = new THREE.Raycaster();
+  graphMouse = new THREE.Vector2();
+
+  graphScene.add(new THREE.AmbientLight(0x404060, 0.5));
+  const pointLight = new THREE.PointLight(0x00e5ff, 1, 500);
+  pointLight.position.set(0, 50, 100);
+  graphScene.add(pointLight);
+
+  try {
+    const res = await authedFetch(`${API}/graph`);
+    const data = await res.json();
+    buildGraph(data);
+  } catch (e) {
+    console.error('Failed to load graph:', e);
+  }
+
+  graphRenderer.domElement.addEventListener('mousemove', onGraphMouseMove);
+  graphRenderer.domElement.addEventListener('click', onGraphClick);
+  window.addEventListener('resize', onGraphResize);
+
+  if (navigator.xr) {
+    navigator.xr.isSessionSupported('immersive-vr').then(supported => {
+      document.getElementById('vr-button').style.display = supported ? 'block' : 'none';
+    });
+  }
+
+  animateGraph();
+}
+
+function buildGraph(data) {
+  graphNodes3D = [];
+  graphEdges3D = [];
+  graphSimNodes = [];
+  graphSimEdges = [];
+
+  const nodeMap = {};
+
+  data.nodes.forEach((node, i) => {
+    const radius = Math.max(2, Math.min(8, 2 + node.connections * 1.5));
+    const geo = new THREE.SphereGeometry(radius, 24, 24);
+    const mat = new THREE.MeshPhongMaterial({
+      color: 0x00e5ff,
+      emissive: 0x004466,
+      emissiveIntensity: 0.6,
+      transparent: true,
+      opacity: 0.9,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+
+    const angle = (i / data.nodes.length) * Math.PI * 2;
+    const r = 50 + Math.random() * 50;
+    mesh.position.set(
+      Math.cos(angle) * r + (Math.random() - 0.5) * 30,
+      (Math.random() - 0.5) * 60,
+      Math.sin(angle) * r + (Math.random() - 0.5) * 30
+    );
+
+    mesh.userData = { title: node.title, connections: node.connections };
+    graphScene.add(mesh);
+    graphNodes3D.push(mesh);
+
+    const glowGeo = new THREE.RingGeometry(radius + 1, radius + 2.5, 32);
+    const glowMat = new THREE.MeshBasicMaterial({
+      color: 0x00e5ff,
+      transparent: true,
+      opacity: 0.15,
+      side: THREE.DoubleSide,
+    });
+    const glow = new THREE.Mesh(glowGeo, glowMat);
+    mesh.add(glow);
+
+    nodeMap[node.title] = { mesh, simNode: { x: mesh.position.x, y: mesh.position.y, z: mesh.position.z, vx: 0, vy: 0, vz: 0 } };
+    graphSimNodes.push(nodeMap[node.title].simNode);
+  });
+
+  data.edges.forEach(edge => {
+    const src = nodeMap[edge.source];
+    const tgt = nodeMap[edge.target];
+    if (!src || !tgt) return;
+
+    const lineMat = new THREE.LineBasicMaterial({ color: 0xb040ff, transparent: true, opacity: 0.4 });
+    const lineGeo = new THREE.BufferGeometry().setFromPoints([src.mesh.position, tgt.mesh.position]);
+    const line = new THREE.Line(lineGeo, lineMat);
+    graphScene.add(line);
+    graphEdges3D.push({ line, src: src.mesh, tgt: tgt.mesh });
+    graphSimEdges.push({ source: graphSimNodes.indexOf(src.simNode), target: graphSimNodes.indexOf(tgt.simNode) });
+  });
+}
+
+function simulateForces() {
+  const repulsion = 5000;
+  const springLength = 80;
+  const springForce = 0.005;
+  const damping = 0.9;
+  const centering = 0.001;
+
+  for (let i = 0; i < graphSimNodes.length; i++) {
+    const a = graphSimNodes[i];
+    for (let j = i + 1; j < graphSimNodes.length; j++) {
+      const b = graphSimNodes[j];
+      let dx = a.x - b.x, dy = a.y - b.y, dz = a.z - b.z;
+      let dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+      let force = repulsion / (dist * dist);
+      let fx = (dx / dist) * force;
+      let fy = (dy / dist) * force;
+      let fz = (dz / dist) * force;
+      a.vx += fx; a.vy += fy; a.vz += fz;
+      b.vx -= fx; b.vy -= fy; b.vz -= fz;
+    }
+    a.vx -= a.x * centering;
+    a.vy -= a.y * centering;
+    a.vz -= a.z * centering;
+  }
+
+  graphSimEdges.forEach(e => {
+    const a = graphSimNodes[e.source];
+    const b = graphSimNodes[e.target];
+    let dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z;
+    let dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+    let displacement = dist - springLength;
+    let fx = (dx / dist) * displacement * springForce;
+    let fy = (dy / dist) * displacement * springForce;
+    let fz = (dz / dist) * displacement * springForce;
+    a.vx += fx; a.vy += fy; a.vz += fz;
+    b.vx -= fx; b.vy -= fy; b.vz -= fz;
+  });
+
+  graphSimNodes.forEach((n, i) => {
+    n.vx *= damping; n.vy *= damping; n.vz *= damping;
+    n.x += n.vx; n.y += n.vy; n.z += n.vz;
+    graphNodes3D[i].position.set(n.x, n.y, n.z);
+  });
+
+  graphEdges3D.forEach(e => {
+    const positions = e.line.geometry.attributes.position;
+    positions.setXYZ(0, e.src.position.x, e.src.position.y, e.src.position.z);
+    positions.setXYZ(1, e.tgt.position.x, e.tgt.position.y, e.tgt.position.z);
+    positions.needsUpdate = true;
+  });
+}
+
+function animateGraph() {
+  graphAnimId = requestAnimationFrame(animateGraph);
+  simulateForces();
+  graphControls.update();
+
+  if (hoveredNode) {
+    const t = performance.now() * 0.003;
+    hoveredNode.material.emissiveIntensity = 0.6 + Math.sin(t) * 0.3;
+  }
+
+  graphRenderer.render(graphScene, graphCamera);
+}
+
+function stopGraph() {
+  if (graphAnimId) cancelAnimationFrame(graphAnimId);
+  graphAnimId = null;
+  const container = document.getElementById('graph-container');
+  const canvas = container.querySelector('canvas');
+  if (canvas) canvas.remove();
+  if (graphRenderer) {
+    graphRenderer.dispose();
+    graphRenderer = null;
+  }
+  vrInfoPanels.forEach(p => { if (p.parent) p.parent.remove(p); });
+  vrInfoPanels = [];
+}
+
+function onGraphMouseMove(event) {
+  const container = document.getElementById('graph-container');
+  const rect = container.getBoundingClientRect();
+  graphMouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  graphMouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+  graphRaycaster.setFromCamera(graphMouse, graphCamera);
+  const intersects = graphRaycaster.intersectObjects(graphNodes3D);
+
+  const tooltip = document.getElementById('graph-tooltip');
+
+  if (hoveredNode && (!intersects.length || intersects[0].object !== hoveredNode)) {
+    hoveredNode.material.emissiveIntensity = 0.6;
+    hoveredNode.material.emissive.setHex(0x004466);
+    hoveredNode = null;
+    tooltip.style.display = 'none';
+  }
+
+  if (intersects.length > 0) {
+    const node = intersects[0].object;
+    hoveredNode = node;
+    node.material.emissive.setHex(0x006688);
+
+    tooltip.querySelector('.tooltip-title').textContent = node.userData.title;
+    tooltip.querySelector('.tooltip-count').textContent = `${node.userData.connections} connections`;
+    tooltip.style.display = 'block';
+    tooltip.style.left = (event.clientX - container.getBoundingClientRect().left + 15) + 'px';
+    tooltip.style.top = (event.clientY - container.getBoundingClientRect().top + 15) + 'px';
+    container.style.cursor = 'pointer';
+  } else {
+    container.style.cursor = 'default';
+  }
+}
+
+function onGraphClick(event) {
+  if (!hoveredNode) return;
+  const title = hoveredNode.userData.title;
+  toggleGraphView();
+  openPage(title);
+}
+
+function onGraphResize() {
+  if (!graphRenderer || !graphViewActive) return;
+  const container = document.getElementById('graph-container');
+  const w = container.clientWidth;
+  const h = container.clientHeight;
+  graphCamera.aspect = w / h;
+  graphCamera.updateProjectionMatrix();
+  graphRenderer.setSize(w, h);
+}
+
+// ============================================
+// Phase 3: AI Chat + Provider Settings
+// ============================================
+
+const OPENAI_MODELS = ['gpt-4o', 'gpt-4o-mini', 'gpt-4.1', 'gpt-4.1-mini', 'gpt-4.1-nano', 'o4-mini'];
+const ANTHROPIC_MODELS = ['claude-sonnet-4-5-20250929', 'claude-haiku-4-5-20251001', 'claude-opus-4-6'];
+
+function getAISettings() {
+  return {
+    provider: localStorage.getItem('kg_ai_provider') || 'ollama',
+    model: localStorage.getItem('kg_ai_model') || '',
+    apiKey: localStorage.getItem('kg_ai_apikey') || '',
+  };
+}
+
+function saveAISettings() {
+  const provider = document.getElementById('ai-provider').value;
+  const model = document.getElementById('ai-model-select').value;
+  const apiKey = document.getElementById('ai-apikey').value;
+  localStorage.setItem('kg_ai_provider', provider);
+  localStorage.setItem('kg_ai_model', model);
+  localStorage.setItem('kg_ai_apikey', apiKey);
+  updateProviderStatus();
+}
+
+function buildAskPayload(question) {
+  const s = getAISettings();
+  return { question, provider: s.provider, model: s.model, api_key: s.apiKey };
+}
+
+function toggleAIPanel() {
+  const panel = document.getElementById('ai-panel');
+  const btn = document.getElementById('ai-toggle');
+  panel.classList.toggle('open');
+  btn.classList.toggle('active');
+  if (panel.classList.contains('open')) initAISettings();
+}
+
+function toggleAISettings() {
+  const body = document.getElementById('ai-settings-body');
+  const arrow = document.getElementById('ai-settings-arrow');
+  body.classList.toggle('open');
+  arrow.innerHTML = body.classList.contains('open') ? '&#9660;' : '&#9654;';
+}
+
+function clearAIChat() {
+  document.getElementById('ai-messages').innerHTML = '';
+}
+
+async function initAISettings() {
+  const s = getAISettings();
+  document.getElementById('ai-provider').value = s.provider;
+  document.getElementById('ai-apikey').value = s.apiKey;
+  onProviderChange(false);
+}
+
+async function onProviderChange(save = true) {
+  const provider = document.getElementById('ai-provider').value;
+  const apiKeyRow = document.getElementById('ai-apikey-row');
+  const modelSelect = document.getElementById('ai-model-select');
+
+  if (provider === 'ollama') {
+    apiKeyRow.style.display = 'none';
+    modelSelect.innerHTML = '<option value="">Loading...</option>';
+    try {
+      const res = await authedFetch(`${API}/ollama/models`);
+      const data = await res.json();
+      modelSelect.innerHTML = '';
+      if (data.models && data.models.length > 0) {
+        data.models.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m;
+          opt.textContent = m;
+          modelSelect.appendChild(opt);
+        });
+      } else {
+        modelSelect.innerHTML = '<option value="">No models found</option>';
+      }
+    } catch {
+      modelSelect.innerHTML = '<option value="">Ollama not available</option>';
+    }
+  } else if (provider === 'openai') {
+    apiKeyRow.style.display = 'block';
+    modelSelect.innerHTML = '';
+    OPENAI_MODELS.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = m;
+      modelSelect.appendChild(opt);
+    });
+  } else if (provider === 'anthropic') {
+    apiKeyRow.style.display = 'block';
+    modelSelect.innerHTML = '';
+    ANTHROPIC_MODELS.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = m;
+      modelSelect.appendChild(opt);
+    });
+  }
+
+  // Restore saved model if it matches
+  const saved = getAISettings();
+  if (saved.provider === provider && saved.model) {
+    modelSelect.value = saved.model;
+  }
+
+  if (save) saveAISettings();
+  updateProviderStatus();
+}
+
+function updateProviderStatus() {
+  const s = getAISettings();
+  const el = document.getElementById('ai-provider-status');
+  const labels = { ollama: 'Ollama (Local)', openai: 'ChatGPT', anthropic: 'Claude' };
+  const model = s.model || '(default)';
+  el.textContent = `Using: ${labels[s.provider] || s.provider} / ${model}`;
+}
+
+async function sendAIChat() {
+  const input = document.getElementById('ai-input');
+  const question = input.value.trim();
+  if (!question) return;
+  input.value = '';
+
+  const messages = document.getElementById('ai-messages');
+
+  const userDiv = document.createElement('div');
+  userDiv.className = 'ai-message user';
+  userDiv.textContent = question;
+  messages.appendChild(userDiv);
+
+  const assistDiv = document.createElement('div');
+  assistDiv.className = 'ai-message assistant';
+  assistDiv.innerHTML = '<div class="ai-loading"><span></span><span></span><span></span></div>';
+  messages.appendChild(assistDiv);
+  messages.scrollTop = messages.scrollHeight;
+
+  try {
+    const res = await authedFetch(`${API}/ask`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(buildAskPayload(question)),
+    });
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let contextPages = [];
+    let firstToken = true;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const text = decoder.decode(value);
+      const lines = text.split('\n').filter(l => l.trim());
+      for (const line of lines) {
+        try {
+          const data = JSON.parse(line);
+          if (data.type === 'context') {
+            contextPages = data.pages;
+          } else if (data.type === 'token') {
+            if (firstToken) { assistDiv.textContent = ''; firstToken = false; }
+            assistDiv.textContent += data.content;
+            messages.scrollTop = messages.scrollHeight;
+          }
+        } catch {}
+      }
+    }
+
+    if (contextPages.length > 0) {
+      const ctxDiv = document.createElement('div');
+      ctxDiv.className = 'ai-context';
+      ctxDiv.textContent = 'Referenced: ' + contextPages.join(', ');
+      assistDiv.appendChild(ctxDiv);
+    }
+  } catch (e) {
+    assistDiv.textContent = 'Error: Could not reach AI assistant.';
+  }
+}
+
+async function askInline(textarea, question) {
+  const wrapper = textarea.closest('.block-line');
+  let responseDiv = wrapper.nextElementSibling;
+  if (!responseDiv || !responseDiv.classList.contains('block-ai-response')) {
+    responseDiv = document.createElement('div');
+    responseDiv.className = 'block-ai-response';
+    wrapper.parentNode.insertBefore(responseDiv, wrapper.nextSibling);
+  }
+  responseDiv.innerHTML = '<div class="ai-loading"><span></span><span></span><span></span></div>';
+
+  try {
+    const res = await authedFetch(`${API}/ask`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(buildAskPayload(question)),
+    });
+
+    responseDiv.textContent = '';
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const text = decoder.decode(value);
+      const lines = text.split('\n').filter(l => l.trim());
+      for (const line of lines) {
+        try {
+          const data = JSON.parse(line);
+          if (data.type === 'token') {
+            responseDiv.textContent += data.content;
+          }
+        } catch {}
+      }
+    }
+  } catch (e) {
+    responseDiv.textContent = 'Error: Could not reach AI assistant.';
+  }
+}
+
+// ============================================
+// Phase 4: WebXR VR Mode
+// ============================================
+
+async function enterVR() {
+  if (!navigator.xr) {
+    alert('WebXR is not supported in this browser.');
+    return;
+  }
+
+  try {
+    const supported = await navigator.xr.isSessionSupported('immersive-vr');
+    if (!supported) {
+      alert('Immersive VR is not supported on this device.');
+      return;
+    }
+
+    xrSession = await navigator.xr.requestSession('immersive-vr');
+    graphRenderer.xr.setSession(xrSession);
+
+    graphNodes3D.forEach((node, i) => {
+      const angle = (i / graphNodes3D.length) * Math.PI * 2;
+      const r = 3 + Math.random() * 2;
+      const y = (Math.random() - 0.5) * 3;
+      node.position.set(Math.cos(angle) * r, y + 1.5, Math.sin(angle) * r - 5);
+      graphSimNodes[i].x = node.position.x;
+      graphSimNodes[i].y = node.position.y;
+      graphSimNodes[i].z = node.position.z;
+    });
+
+    graphRenderer.setAnimationLoop(vrAnimate);
+
+    const controller = graphRenderer.xr.getController(0);
+    graphScene.add(controller);
+    controller.addEventListener('selectstart', onVRSelect);
+
+    xrSession.addEventListener('end', () => {
+      xrSession = null;
+      graphRenderer.setAnimationLoop(null);
+      vrInfoPanels.forEach(p => graphScene.remove(p));
+      vrInfoPanels = [];
+      animateGraph();
+    });
+
+  } catch (e) {
+    console.error('VR error:', e);
+    alert('Failed to enter VR: ' + e.message);
+  }
+}
+
+function vrAnimate(timestamp, frame) {
+  if (!frame) return;
+
+  const controller = graphRenderer.xr.getController(0);
+  if (controller) {
+    const tempMatrix = new THREE.Matrix4();
+    tempMatrix.identity().extractRotation(controller.matrixWorld);
+    const ray = new THREE.Raycaster();
+    ray.ray.origin.setFromMatrixPosition(controller.matrixWorld);
+    ray.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
+
+    const intersects = ray.intersectObjects(graphNodes3D);
+
+    graphNodes3D.forEach(n => {
+      n.material.emissiveIntensity = 0.6;
+      n.scale.set(1, 1, 1);
+    });
+
+    if (intersects.length > 0) {
+      const node = intersects[0].object;
+      const t = performance.now() * 0.005;
+      const scale = 1 + Math.sin(t) * 0.2;
+      node.scale.set(scale, scale, scale);
+      node.material.emissiveIntensity = 1.2;
+      hoveredNode = node;
+    } else {
+      hoveredNode = null;
+    }
+  }
+
+  graphRenderer.render(graphScene, graphCamera);
+}
+
+function onVRSelect() {
+  if (!hoveredNode) return;
+  const title = hoveredNode.userData.title;
+  const content = hoveredNode.userData.content || '';
+
+  vrInfoPanels.forEach(p => graphScene.remove(p));
+  vrInfoPanels = [];
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#12121a';
+  ctx.fillRect(0, 0, 512, 256);
+  ctx.strokeStyle = '#00e5ff';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(2, 2, 508, 252);
+
+  ctx.fillStyle = '#00e5ff';
+  ctx.font = 'bold 24px sans-serif';
+  ctx.fillText(title, 16, 40);
+
+  ctx.fillStyle = '#e0e0e8';
+  ctx.font = '16px sans-serif';
+  const preview = (content || 'No content').substring(0, 200);
+  const words = preview.split(' ');
+  let line = '';
+  let y = 80;
+  words.forEach(word => {
+    const test = line + word + ' ';
+    if (ctx.measureText(test).width > 480) {
+      ctx.fillText(line, 16, y);
+      line = word + ' ';
+      y += 22;
+      if (y > 230) return;
+    } else {
+      line = test;
+    }
+  });
+  if (y <= 230) ctx.fillText(line, 16, y);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  const panelGeo = new THREE.PlaneGeometry(1.5, 0.75);
+  const panelMat = new THREE.MeshBasicMaterial({ map: texture, transparent: true, opacity: 0.95 });
+  const panel = new THREE.Mesh(panelGeo, panelMat);
+
+  panel.position.copy(hoveredNode.position);
+  panel.position.y += 0.5;
+  panel.position.z += 0.5;
+
+  graphScene.add(panel);
+  vrInfoPanels.push(panel);
+
+  authedFetch(`${API}/pages/${encodeURIComponent(title)}`)
+    .then(r => r.json())
+    .then(page => {
+      ctx.fillStyle = '#12121a';
+      ctx.fillRect(0, 60, 512, 196);
+      ctx.fillStyle = '#e0e0e8';
+      ctx.font = '16px sans-serif';
+      const text = (page.content || 'No content').substring(0, 200);
+      const w2 = text.split(' ');
+      let l2 = '';
+      let y2 = 80;
+      w2.forEach(word => {
+        const test = l2 + word + ' ';
+        if (ctx.measureText(test).width > 480) {
+          ctx.fillText(l2, 16, y2);
+          l2 = word + ' ';
+          y2 += 22;
+          if (y2 > 230) return;
+        } else {
+          l2 = test;
+        }
+      });
+      if (y2 <= 230) ctx.fillText(l2, 16, y2);
+      texture.needsUpdate = true;
+    })
+    .catch(() => {});
+}
+
+
+// ============================================
+// Init
+// ============================================
+
+// If we have a stored token, go straight to app
+if (authToken) {
+  showApp();
+}
+</script>
+</body>
+</html>
