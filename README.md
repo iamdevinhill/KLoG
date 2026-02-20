@@ -34,6 +34,7 @@ The app will wait for Neo4j to be ready before starting.
 |---|---|---|
 | `NEO4J_PASSWORD` | `neo4jpassword` | Neo4j database password |
 | `JWT_SECRET` | `change_me_in_production` | Secret key for JWT token signing |
+| `OLLAMA_BASE_URL` | `http://host.docker.internal:11434` | Ollama API URL (auto-resolves to host in Docker) |
 
 Set these in a `.env` file or export them before running `docker compose up`.
 
@@ -51,6 +52,36 @@ cp .env.example .env  # edit with your Neo4j credentials
 # Run the server
 uvicorn main:app --reload --port 8000
 ```
+
+## AI Assistant
+
+The built-in AI assistant uses your notes as context when answering questions. It supports three providers — choose one from the settings panel inside the app.
+
+### Ollama (Local)
+
+Run models locally with no API key required. The app auto-detects models you have installed.
+
+```bash
+# Install Ollama: https://ollama.com
+# Pull a model
+ollama pull qwen3:8b
+```
+
+When running via Docker, the app reaches Ollama on your host machine through `host.docker.internal`. Override with the `OLLAMA_BASE_URL` env variable if needed.
+
+### OpenAI (ChatGPT)
+
+Use any OpenAI chat model (e.g. `gpt-4o`, `gpt-4o-mini`). Enter your API key in the settings panel.
+
+Get an API key at [platform.openai.com/api-keys](https://platform.openai.com/api-keys).
+
+### Anthropic (Claude)
+
+Use any Anthropic model (e.g. `claude-sonnet-4-5-20250929`). Enter your API key in the settings panel.
+
+Get an API key at [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys).
+
+> API keys are stored in your browser's localStorage and sent directly to the provider — they are never saved on the server.
 
 ## API Endpoints
 
@@ -87,6 +118,4 @@ Neo4j schema:
 - `(:User)-[:OWNS]->(:Page)` — ownership
 - `(:Page)-[:LINKS_TO]->(:Page)` — wikilink connections
 
-## License
 
-MIT
