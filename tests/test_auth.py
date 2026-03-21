@@ -1,8 +1,6 @@
 """Tests for authentication utilities."""
 
-import time
 from datetime import datetime, timezone, timedelta
-from unittest.mock import patch
 
 import jwt
 import pytest

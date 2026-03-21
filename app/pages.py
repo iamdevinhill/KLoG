@@ -64,7 +64,7 @@ def _get_page(username: str, title: str):
             content=record["content"] or "",
             createdAt=record["createdAt"],
             updatedAt=record["updatedAt"],
-            links=[l for l in record["links"] if l],
+            links=[link for link in record["links"] if link],
             backlinks=[b for b in record["backlinks"] if b],
         )
 
