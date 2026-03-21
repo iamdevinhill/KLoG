@@ -4,7 +4,7 @@ A knowledge graph note-taking app with a 3D graph view, multi-provider AI assist
 
 Inspired by [Logseq](https://github.com/logseq/logseq), an open-source knowledge management tool licensed under AGPL-3.0.
 
-![KLoG Demo](demo.gif)
+![KLoG Demo](demo2x.gif)
 
 ## Features
 
