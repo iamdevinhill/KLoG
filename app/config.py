@@ -15,11 +15,19 @@ OLLAMA_BASE = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")
 
 _DEFAULT_SECRETS = {"kg_log_secret_change_me_in_production", "change_me_in_production"}
+DEV_MODE = os.getenv("DEV_MODE", "").lower() in ("1", "true", "yes")
 
 
-def warn_default_secret():
+def check_default_secret():
     if JWT_SECRET in _DEFAULT_SECRETS:
-        logger.warning(
-            "JWT_SECRET is set to a default value. "
-            "Set a strong, unique JWT_SECRET environment variable before deploying to production."
-        )
+        if DEV_MODE:
+            logger.warning(
+                "JWT_SECRET is set to a default value. "
+                "This is allowed in DEV_MODE but must be changed for production."
+            )
+        else:
+            raise RuntimeError(
+                "JWT_SECRET is set to a default value. "
+                "Set a strong, unique JWT_SECRET environment variable, "
+                "or set DEV_MODE=true to bypass this check for local development."
+            )

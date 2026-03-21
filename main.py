@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from fastapi import HTTPException
 
-from app.config import CORS_ORIGINS, warn_default_secret
+from app.config import CORS_ORIGINS, check_default_secret
 from app.database import get_driver, close_driver, ensure_fulltext_index
 from app.auth import hash_password, verify_password, create_token
 from app.models import AuthRequest, AuthResponse
@@ -18,7 +18,7 @@ from app.ai import router as ai_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    warn_default_secret()
+    check_default_secret()
     get_driver()
     for attempt in range(15):
         try:
