@@ -14,6 +14,8 @@ Inspired by [Logseq](https://github.com/logseq/logseq), an open-source knowledge
 - **AI assistant** — streaming chat with context from your notes; supports Ollama, OpenAI, and Anthropic
 - **WebXR VR mode** — explore your knowledge graph in VR with controller raycasting
 - **User accounts** — signup/login with JWT auth; each user's pages are isolated
+- **Bulk delete** — multi-select pages in the sidebar and delete them in one action
+- **Onboarding guide** — interactive walkthrough shown to new users on first login
 
 ## Quick Start (Docker)
 
@@ -121,6 +123,7 @@ Get an API key at [console.anthropic.com/settings/keys](https://console.anthropi
 - `POST /pages` — create a page (JSON: `title`, `content`)
 - `PUT /pages/{title}` — update a page (JSON: `content`)
 - `DELETE /pages/{title}` — delete a page
+- `POST /pages/bulk-delete` — delete multiple pages (JSON: `titles`)
 
 ### Graph
 
