@@ -2,6 +2,8 @@
 
 A knowledge graph note-taking app with a 3D graph view, multi-provider AI assistant, and WebXR VR mode. Built with FastAPI, Neo4j, and vanilla JS.
 
+Inspired by [Logseq](https://github.com/logseq/logseq), an open-source knowledge management tool licensed under AGPL-3.0.
+
 ## Features
 
 - **Block-based editor** — bullet-style blocks with `[[wikilinks]]` that auto-create linked pages
@@ -19,6 +21,10 @@ A knowledge graph note-taking app with a 3D graph view, multi-provider AI assist
 # Clone the repo
 git clone https://github.com/iamdevinhill/kg_log.git && cd kg_log
 
+# Copy and configure environment
+cp .env.example .env
+# Edit .env — at minimum, change JWT_SECRET and NEO4J_PASSWORD
+
 # Start the stack
 docker compose up -d --build
 
@@ -28,34 +34,49 @@ open http://localhost:8000
 
 The app will wait for Neo4j to be ready before starting.
 
-## Environment Variables
+## Configuration
+
+Copy `.env.example` to `.env` and configure:
 
 | Variable | Default | Description |
 |---|---|---|
+| `NEO4J_URI` | `bolt://localhost:7687` | Neo4j connection URI |
+| `NEO4J_USER` | `neo4j` | Neo4j username |
 | `NEO4J_PASSWORD` | `neo4jpassword` | Neo4j database password |
-| `JWT_SECRET` | `change_me_in_production` | Secret key for JWT token signing |
-| `OLLAMA_BASE_URL` | `http://host.docker.internal:11434` | Ollama API URL (auto-resolves to host in Docker) |
+| `JWT_SECRET` | *(must change)* | Secret key for JWT token signing |
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama API URL |
+| `CORS_ORIGINS` | `*` | Comma-separated allowed CORS origins |
 
-Set these in a `.env` file or export them before running `docker compose up`.
+> **Important:** Always set a strong, unique `JWT_SECRET` before deploying. The app will log a warning if the default value is detected.
 
 ## Development (without Docker)
 
 ```bash
 # Prerequisites: Python 3.12+, Neo4j 5+
 
+# Create and activate a virtual environment
+python -m venv venv
+source venv/bin/activate
+
 # Install dependencies
 pip install -r requirements.txt
 
-# Configure .env
+# Configure environment
 cp .env.example .env  # edit with your Neo4j credentials
 
 # Run the server
 uvicorn main:app --reload --port 8000
 ```
 
+### Running Tests
+
+```bash
+pytest tests/ -v
+```
+
 ## AI Assistant
 
-The built-in AI assistant uses your notes as context when answering questions. It supports three providers — choose one from the settings panel inside the app.
+The built-in AI assistant uses your notes as context when answering questions. Choose a provider from the settings panel inside the app.
 
 ### Ollama (Local)
 
@@ -63,7 +84,6 @@ Run models locally with no API key required. The app auto-detects models you hav
 
 ```bash
 # Install Ollama: https://ollama.com
-# Pull a model
 ollama pull qwen3:8b
 ```
 
@@ -85,37 +105,63 @@ Get an API key at [console.anthropic.com/settings/keys](https://console.anthropi
 
 ## API Endpoints
 
+### Health
+
+- `GET /health` — health check (returns Neo4j connectivity status)
+
 ### Auth
+
 - `POST /signup` — create account (JSON: `username`, `password`)
 - `POST /login` — get JWT token (JSON: `username`, `password`)
 
 ### Pages (requires `Authorization: Bearer <token>`)
+
 - `GET /pages` — list all pages
-- `GET /pages/{title}` — get a single page
-- `POST /pages` — create a page (JSON: `title`, `blocks`)
-- `PUT /pages/{title}` — update a page (JSON: `blocks`)
+- `GET /pages/{title}` — get a single page with links and backlinks
+- `POST /pages` — create a page (JSON: `title`, `content`)
+- `PUT /pages/{title}` — update a page (JSON: `content`)
 - `DELETE /pages/{title}` — delete a page
 
 ### Graph
+
 - `GET /graph` — get all nodes and edges for the graph view
 
 ### AI
+
 - `POST /ask` — streaming AI response (JSON: `question`, `provider`, `model`, `api_key`)
 - `GET /ollama/models` — list locally available Ollama models
 
 ## Architecture
 
 ```
-main.py          — FastAPI backend (auth, CRUD, AI streaming, graph)
+app/
+  config.py      — environment variables and configuration
+  database.py    — Neo4j driver management
+  auth.py        — JWT authentication helpers
+  models.py      — Pydantic request/response models
+  pages.py       — page CRUD routes and wikilink parsing
+  graph.py       — knowledge graph routes
+  ai.py          — multi-provider AI streaming routes
+main.py          — FastAPI app setup, lifespan, auth endpoints
 static/index.html — single-file frontend (editor, graph, AI panel, VR)
-Dockerfile        — Python 3.12 slim image
+tests/           — test suite
+Dockerfile       — Python 3.12 slim image with non-root user
 docker-compose.yml — app + Neo4j stack
 ```
 
-Neo4j schema:
-- `(:User {username, password_hash})` — user accounts
-- `(:Page {title, blocks, updated_at})` — note pages
+### Neo4j Schema
+
+- `(:User {username, password})` — user accounts
+- `(:Page {title, content, createdAt, updatedAt})` — note pages
 - `(:User)-[:OWNS]->(:Page)` — ownership
 - `(:Page)-[:LINKS_TO]->(:Page)` — wikilink connections
 
+## Contributing
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
+
+## License
+
+This project is licensed under the [GNU Affero General Public License v3.0](LICENSE).
+
+KG Log is inspired by [Logseq](https://github.com/logseq/logseq), which is also licensed under AGPL-3.0.
