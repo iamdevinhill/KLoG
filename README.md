@@ -1,4 +1,4 @@
-# KG Log
+# KLoG
 
 A knowledge graph note-taking app with a 3D graph view, multi-provider AI assistant, and WebXR VR mode. Built with FastAPI, Neo4j, and vanilla JS.
 
@@ -167,4 +167,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
 
 This project is licensed under the [GNU Affero General Public License v3.0](LICENSE).
 
-KG Log is inspired by [Logseq](https://github.com/logseq/logseq), which is also licensed under AGPL-3.0.
+KLoG is inspired by [Logseq](https://github.com/logseq/logseq), which is also licensed under AGPL-3.0.

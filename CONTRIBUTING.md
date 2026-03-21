@@ -1,4 +1,4 @@
-# Contributing to KG Log
+# Contributing to KLoG
 
 Thanks for your interest in contributing! This guide will help you get started.
 

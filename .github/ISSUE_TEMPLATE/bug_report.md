@@ -1,6 +1,6 @@
 ---
 name: Bug Report
-about: Report a bug to help improve KG Log
+about: Report a bug to help improve KLoG
 title: "[Bug] "
 labels: bug
 assignees: ""

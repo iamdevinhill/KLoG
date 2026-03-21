@@ -33,7 +33,7 @@ async def lifespan(app: FastAPI):
     close_driver()
 
 
-app = FastAPI(title="KG Log", lifespan=lifespan)
+app = FastAPI(title="KLoG", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

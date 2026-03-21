@@ -1,6 +1,6 @@
 ---
 name: Feature Request
-about: Suggest a new feature for KG Log
+about: Suggest a new feature for KLoG
 title: "[Feature] "
 labels: enhancement
 assignees: ""
