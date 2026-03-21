@@ -3,6 +3,7 @@
 from app.models import (
     AuthRequest,
     AuthResponse,
+    BulkDeleteRequest,
     PageCreate,
     PageUpdate,
     PageResponse,
@@ -59,6 +60,16 @@ class TestGraphModels:
         )
         assert len(resp.nodes) == 1
         assert len(resp.edges) == 1
+
+
+class TestBulkDeleteRequest:
+    def test_with_titles(self):
+        req = BulkDeleteRequest(titles=["Page A", "Page B"])
+        assert len(req.titles) == 2
+
+    def test_empty_titles(self):
+        req = BulkDeleteRequest(titles=[])
+        assert req.titles == []
 
 
 class TestAskRequest:

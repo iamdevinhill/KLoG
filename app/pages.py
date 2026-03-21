@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Depends
 
 from app.auth import get_current_user
 from app.database import get_driver
-from app.models import PageCreate, PageUpdate, PageResponse, PageListItem
+from app.models import PageCreate, PageUpdate, PageResponse, PageListItem, BulkDeleteRequest
 
 router = APIRouter()
 
@@ -149,3 +149,23 @@ def delete_page(title: str, username: str = Depends(get_current_user)):
             "MATCH (u:User {username: $username})-[:OWNS]->(p:Page {title: $title}) DETACH DELETE p",
             username=username, title=title,
         )
+
+
+@router.post("/pages/bulk-delete", status_code=200)
+def bulk_delete_pages(req: BulkDeleteRequest, username: str = Depends(get_current_user)):
+    if not req.titles:
+        raise HTTPException(status_code=400, detail="No pages specified")
+    d = get_driver()
+    with d.session() as session:
+        result = session.run(
+            """
+            UNWIND $titles AS title
+            MATCH (u:User {username: $username})-[:OWNS]->(p:Page {title: title})
+            DETACH DELETE p
+            RETURN count(p) AS deleted
+            """,
+            titles=req.titles, username=username,
+        )
+        record = result.single()
+        deleted = record["deleted"] if record else 0
+    return {"deleted": deleted}

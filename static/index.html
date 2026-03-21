@@ -221,10 +221,161 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.page-item .select-cb {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+  display: none;
+}
+
+.bulk-mode .page-item .select-cb { display: block; }
+
+.page-item .page-item-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
 }
 
 .page-item:hover { background: var(--hover); }
 .page-item.active { background: var(--bg-tertiary); color: var(--accent); }
+.page-item.selected { background: rgba(0, 229, 255, 0.08); }
+
+/* --- Bulk actions bar --- */
+#bulk-bar {
+  display: none;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border-top: 1px solid var(--border);
+  gap: 6px;
+  align-items: center;
+  font-size: 12px;
+}
+
+#bulk-bar.visible { display: flex; }
+
+#bulk-bar span { color: var(--text-dim); flex: 1; }
+
+#bulk-bar button {
+  background: var(--error);
+  color: white;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+#bulk-bar button.cancel-btn {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+
+/* --- Onboarding --- */
+#onboarding-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+#onboarding-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 36px 32px;
+  max-width: 520px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+#onboarding-card h2 {
+  color: var(--accent);
+  font-size: 22px;
+  margin-bottom: 6px;
+}
+
+#onboarding-card .onboard-subtitle {
+  color: var(--text-dim);
+  font-size: 13px;
+  margin-bottom: 24px;
+}
+
+#onboarding-card .onboard-section {
+  margin-bottom: 20px;
+}
+
+#onboarding-card .onboard-section h3 {
+  font-size: 14px;
+  color: var(--accent2);
+  margin-bottom: 6px;
+}
+
+#onboarding-card .onboard-section p {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+#onboarding-card code {
+  background: var(--bg-tertiary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+#onboarding-card .onboard-example {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--text-dim);
+}
+
+#onboarding-card .onboard-example .wikilink {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+#onboarding-card .onboard-btn {
+  width: 100%;
+  margin-top: 8px;
+  padding: 12px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none;
+  border-radius: 8px;
+  color: var(--bg);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#onboarding-card .onboard-skip {
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 12px;
+  cursor: pointer;
+}
 
 /* --- Main area --- */
 #main {
@@ -642,8 +793,14 @@ body {
     <div id="sidebar-actions">
       <button class="sidebar-btn" onclick="createNewPage()">+ New Page</button>
       <button class="sidebar-btn" onclick="openToday()">Today</button>
+      <button class="sidebar-btn" id="select-toggle" onclick="toggleBulkMode()">Select</button>
     </div>
     <div id="page-list"></div>
+    <div id="bulk-bar">
+      <span id="bulk-count">0 selected</span>
+      <button class="cancel-btn" onclick="toggleBulkMode()">Cancel</button>
+      <button onclick="bulkDelete()">Delete</button>
+    </div>
   </div>
 
   <!-- Main Content -->
@@ -794,11 +951,63 @@ function logout() {
   document.getElementById('auth-error').textContent = '';
 }
 
-function showApp() {
+async function showApp() {
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('app').classList.add('visible');
-  loadPageList();
+  await loadPageList();
   openToday();
+  if (allPages.length === 0 && !localStorage.getItem('kg_onboarded')) {
+    showOnboarding();
+  }
+}
+
+function showOnboarding() {
+  const overlay = document.createElement('div');
+  overlay.id = 'onboarding-overlay';
+  overlay.innerHTML = `
+    <div id="onboarding-card">
+      <h2>Welcome to KG Log</h2>
+      <p class="onboard-subtitle">Your personal knowledge graph. Here's how to get the most out of it.</p>
+
+      <div class="onboard-section">
+        <h3>Link your thoughts with [[wikilinks]]</h3>
+        <p>Wrap any word or phrase in double brackets to create a link to another page. If the page doesn't exist yet, it's created automatically.</p>
+        <div class="onboard-example">
+          Today I learned about <span class="wikilink">[[Graph Databases]]</span> and how they relate to <span class="wikilink">[[Knowledge Management]]</span>
+        </div>
+      </div>
+
+      <div class="onboard-section">
+        <h3>Daily journal</h3>
+        <p>A page for today's date is created automatically. Use it as a daily log and link out to topic pages.</p>
+      </div>
+
+      <div class="onboard-section">
+        <h3>Discover connections</h3>
+        <p>Every page shows its <strong>backlinks</strong> — pages that link to it. Click <strong>Graph View</strong> to see your entire knowledge graph in 3D.</p>
+      </div>
+
+      <div class="onboard-section">
+        <h3>Ask your notes</h3>
+        <p>Open <strong>AI Chat</strong> to ask questions. The AI searches your notes for relevant context before answering. Use <code>/ask your question</code> inline in any block for quick answers.</p>
+      </div>
+
+      <div class="onboard-section">
+        <h3>Keyboard shortcuts</h3>
+        <p><code>Enter</code> — new block &nbsp; <code>Ctrl+S</code> — save &nbsp; <code>Backspace</code> on empty block — delete it</p>
+      </div>
+
+      <button class="onboard-btn" onclick="dismissOnboarding()">Get Started</button>
+      <button class="onboard-skip" onclick="dismissOnboarding(true)">Don't show this again</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+function dismissOnboarding(dontShowAgain) {
+  const overlay = document.getElementById('onboarding-overlay');
+  if (overlay) overlay.remove();
+  if (dontShowAgain) localStorage.setItem('kg_onboarded', '1');
 }
 
 // Enter key on auth inputs
@@ -839,16 +1048,81 @@ async function loadPageList() {
   }
 }
 
+let bulkMode = false;
+let selectedPages = new Set();
+
 function renderPageList(pages) {
   const list = document.getElementById('page-list');
   list.innerHTML = '';
   pages.forEach(p => {
     const div = document.createElement('div');
-    div.className = 'page-item' + (currentPage === p.title ? ' active' : '');
-    div.textContent = p.title;
-    div.onclick = () => openPage(p.title);
+    div.className = 'page-item' + (currentPage === p.title ? ' active' : '') + (selectedPages.has(p.title) ? ' selected' : '');
+
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.className = 'select-cb';
+    cb.checked = selectedPages.has(p.title);
+    cb.onclick = (e) => {
+      e.stopPropagation();
+      if (cb.checked) selectedPages.add(p.title);
+      else selectedPages.delete(p.title);
+      div.classList.toggle('selected', cb.checked);
+      updateBulkCount();
+    };
+
+    const titleSpan = document.createElement('span');
+    titleSpan.className = 'page-item-title';
+    titleSpan.textContent = p.title;
+
+    div.appendChild(cb);
+    div.appendChild(titleSpan);
+    div.onclick = () => {
+      if (bulkMode) {
+        cb.checked = !cb.checked;
+        if (cb.checked) selectedPages.add(p.title);
+        else selectedPages.delete(p.title);
+        div.classList.toggle('selected', cb.checked);
+        updateBulkCount();
+      } else {
+        openPage(p.title);
+      }
+    };
     list.appendChild(div);
   });
+}
+
+function toggleBulkMode() {
+  bulkMode = !bulkMode;
+  selectedPages.clear();
+  const list = document.getElementById('page-list');
+  list.classList.toggle('bulk-mode', bulkMode);
+  document.getElementById('bulk-bar').classList.toggle('visible', bulkMode);
+  document.getElementById('select-toggle').textContent = bulkMode ? 'Cancel' : 'Select';
+  updateBulkCount();
+  renderPageList(filterPages());
+}
+
+function updateBulkCount() {
+  document.getElementById('bulk-count').textContent = selectedPages.size + ' selected';
+}
+
+async function bulkDelete() {
+  if (selectedPages.size === 0) return;
+  if (!confirm(`Delete ${selectedPages.size} page(s)? This cannot be undone.`)) return;
+  try {
+    await authedFetch(`${API}/pages/bulk-delete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ titles: Array.from(selectedPages) }),
+    });
+    if (selectedPages.has(currentPage)) currentPage = null;
+    selectedPages.clear();
+    toggleBulkMode();
+    await loadPageList();
+    if (!currentPage) openToday();
+  } catch (e) {
+    console.error('Bulk delete failed:', e);
+  }
 }
 
 async function openPage(title) {

@@ -50,6 +50,10 @@ class GraphResponse(BaseModel):
     edges: list[GraphEdge]
 
 
+class BulkDeleteRequest(BaseModel):
+    titles: list[str]
+
+
 class AskRequest(BaseModel):
     question: str
     provider: str = "ollama"
