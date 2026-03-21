@@ -14,8 +14,8 @@ Thanks for your interest in contributing! This guide will help you get started.
 
 ```bash
 # Clone the repo
-git clone https://github.com/iamdevinhill/kg_log.git
-cd kg_log
+git clone https://github.com/iamdevinhill/klog.git
+cd klog
 
 # Create a virtual environment
 python -m venv venv
@@ -45,12 +45,12 @@ pytest tests/ -v
 
 ### Reporting Bugs
 
-- Use the [Bug Report](https://github.com/iamdevinhill/kg_log/issues/new?template=bug_report.md) template
+- Use the [Bug Report](https://github.com/iamdevinhill/klog/issues/new?template=bug_report.md) template
 - Include steps to reproduce, expected vs actual behavior, and your environment details
 
 ### Suggesting Features
 
-- Use the [Feature Request](https://github.com/iamdevinhill/kg_log/issues/new?template=feature_request.md) template
+- Use the [Feature Request](https://github.com/iamdevinhill/klog/issues/new?template=feature_request.md) template
 - Describe the use case and why it would be valuable
 
 ### Submitting Code
@@ -87,4 +87,4 @@ tests/         - Test suite
 
 ## Questions?
 
-Open a [Discussion](https://github.com/iamdevinhill/kg_log/discussions) or file an issue.
+Open a [Discussion](https://github.com/iamdevinhill/klog/discussions) or file an issue.

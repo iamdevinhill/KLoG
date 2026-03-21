@@ -23,7 +23,7 @@ Inspired by [Logseq](https://github.com/logseq/logseq), an open-source knowledge
 
 ```bash
 # Clone the repo
-git clone https://github.com/iamdevinhill/kg_log.git && cd kg_log
+git clone https://github.com/iamdevinhill/klog.git && cd klog
 
 # Copy and configure environment
 cp .env.example .env
