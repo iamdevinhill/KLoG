@@ -14,10 +14,12 @@ class AuthResponse(BaseModel):
 class PageCreate(BaseModel):
     title: str
     content: str = ""
+    color: str = "#00e5ff"
 
 
 class PageUpdate(BaseModel):
     content: str
+    color: str | None = None
 
 
 class PageResponse(BaseModel):
@@ -27,6 +29,7 @@ class PageResponse(BaseModel):
     updatedAt: str
     backlinks: list[str] = []
     links: list[str] = []
+    color: str = "#00e5ff"
 
 
 class PageListItem(BaseModel):
@@ -38,6 +41,7 @@ class GraphNode(BaseModel):
     id: str
     title: str
     connections: int = 0
+    color: str = "#00e5ff"
 
 
 class GraphEdge(BaseModel):

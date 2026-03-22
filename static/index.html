@@ -829,6 +829,10 @@ body {
       <div id="page-title-display">Loading...</div>
       <button class="toolbar-btn" id="graph-toggle" onclick="toggleGraphView()">Graph View</button>
       <button class="toolbar-btn" id="ai-toggle" onclick="toggleAIPanel()">AI Chat</button>
+      <label class="toolbar-btn" for="page-color" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;margin:0;">
+        Node Color
+        <input type="color" id="page-color" value="#00e5ff" title="Page color" onchange="savePageColor(this.value)" style="width:18px;height:18px;border:none;background:none;cursor:pointer;padding:0;">
+      </label>
       <button class="toolbar-btn" onclick="savePage()">Save</button>
       <button class="toolbar-btn" onclick="deletePage()">Delete</button>
     </div>
@@ -873,6 +877,7 @@ body {
           <option value="ollama">Ollama (Local)</option>
           <option value="openai">ChatGPT (OpenAI)</option>
           <option value="anthropic">Claude (Anthropic)</option>
+          <option value="gemini">Gemini (Google)</option>
         </select>
 
         <div id="ai-apikey-row" style="display:none;">
@@ -1007,6 +1012,11 @@ function showOnboarding() {
       <div class="onboard-section">
         <h3>Discover connections</h3>
         <p>Every page shows its <strong>backlinks</strong> — pages that link to it. Click <strong>Graph View</strong> to see your entire knowledge graph in 3D.</p>
+      </div>
+
+      <div class="onboard-section">
+        <h3>Color code your nodes</h3>
+        <p>Use the <strong>Node Color</strong> picker in the toolbar to assign a color to any page. That color shows up on the node in Graph View, making it easy to visually group related topics.</p>
       </div>
 
       <div class="onboard-section">
@@ -1161,6 +1171,7 @@ async function openPage(title) {
     const page = await res.json();
     currentPage = page.title;
     document.getElementById('page-title-display').textContent = page.title;
+    document.getElementById('page-color').value = page.color || '#00e5ff';
     renderBlocks(page.content);
     renderBacklinks(page.backlinks);
     renderPageList(filterPages());
@@ -1288,7 +1299,7 @@ async function savePage() {
     await authedFetch(`${API}/pages/${encodeURIComponent(currentPage)}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content }),
+      body: JSON.stringify({ content, color: document.getElementById('page-color').value }),
     });
     await loadPageList();
     const res = await authedFetch(`${API}/pages/${encodeURIComponent(currentPage)}`);
@@ -1297,6 +1308,16 @@ async function savePage() {
   } catch (e) {
     console.error('Failed to save:', e);
   }
+}
+
+async function savePageColor(color) {
+  if (!currentPage) return;
+  const content = getEditorContent();
+  await authedFetch(`${API}/pages/${encodeURIComponent(currentPage)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content, color }),
+  });
 }
 
 async function deletePage() {
@@ -1437,9 +1458,11 @@ function buildGraph(data) {
   data.nodes.forEach((node, i) => {
     const radius = Math.max(2, Math.min(8, 2 + node.connections * 1.5));
     const geo = new THREE.SphereGeometry(radius, 24, 24);
+    const nodeColor = new THREE.Color(node.color || '#00e5ff');
+    const emissiveColor = nodeColor.clone().multiplyScalar(0.4);
     const mat = new THREE.MeshPhongMaterial({
-      color: 0x00e5ff,
-      emissive: 0x004466,
+      color: nodeColor,
+      emissive: emissiveColor,
       emissiveIntensity: 0.6,
       transparent: true,
       opacity: 0.9,
@@ -1454,13 +1477,13 @@ function buildGraph(data) {
       Math.sin(angle) * r + (Math.random() - 0.5) * 30
     );
 
-    mesh.userData = { title: node.title, connections: node.connections };
+    mesh.userData = { title: node.title, connections: node.connections, color: node.color || '#00e5ff' };
     graphScene.add(mesh);
     graphNodes3D.push(mesh);
 
     const glowGeo = new THREE.RingGeometry(radius + 1, radius + 2.5, 32);
     const glowMat = new THREE.MeshBasicMaterial({
-      color: 0x00e5ff,
+      color: nodeColor,
       transparent: true,
       opacity: 0.15,
       side: THREE.DoubleSide,
@@ -1578,7 +1601,7 @@ function onGraphMouseMove(event) {
 
   if (hoveredNode && (!intersects.length || intersects[0].object !== hoveredNode)) {
     hoveredNode.material.emissiveIntensity = 0.6;
-    hoveredNode.material.emissive.setHex(0x004466);
+    hoveredNode.material.emissive.copy(new THREE.Color(hoveredNode.userData.color).multiplyScalar(0.4));
     hoveredNode = null;
     tooltip.style.display = 'none';
   }
@@ -1586,7 +1609,7 @@ function onGraphMouseMove(event) {
   if (intersects.length > 0) {
     const node = intersects[0].object;
     hoveredNode = node;
-    node.material.emissive.setHex(0x006688);
+    node.material.emissive.copy(new THREE.Color(node.userData.color).multiplyScalar(0.6));
 
     tooltip.querySelector('.tooltip-title').textContent = node.userData.title;
     tooltip.querySelector('.tooltip-count').textContent = `${node.userData.connections} connections`;
@@ -1622,6 +1645,7 @@ function onGraphResize() {
 
 const OPENAI_MODELS = ['gpt-4o', 'gpt-4o-mini', 'gpt-4.1', 'gpt-4.1-mini', 'gpt-4.1-nano', 'o4-mini'];
 const ANTHROPIC_MODELS = ['claude-sonnet-4-5-20250929', 'claude-haiku-4-5-20251001', 'claude-opus-4-6'];
+const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash'];
 
 function getAISettings() {
   return {
@@ -1715,6 +1739,15 @@ async function onProviderChange(save = true) {
       opt.textContent = m;
       modelSelect.appendChild(opt);
     });
+  } else if (provider === 'gemini') {
+    apiKeyRow.style.display = 'block';
+    modelSelect.innerHTML = '';
+    GEMINI_MODELS.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = m;
+      modelSelect.appendChild(opt);
+    });
   }
 
   // Restore saved model if it matches
@@ -1730,7 +1763,7 @@ async function onProviderChange(save = true) {
 function updateProviderStatus() {
   const s = getAISettings();
   const el = document.getElementById('ai-provider-status');
-  const labels = { ollama: 'Ollama (Local)', openai: 'ChatGPT', anthropic: 'Claude' };
+  const labels = { ollama: 'Ollama (Local)', openai: 'ChatGPT', anthropic: 'Claude', gemini: 'Gemini' };
   const model = s.model || '(default)';
   el.textContent = `Using: ${labels[s.provider] || s.provider} / ${model}`;
 }

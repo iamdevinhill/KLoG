@@ -51,6 +51,7 @@ def _get_page(username: str, title: str):
             OPTIONAL MATCH (backlinker:Page)-[:LINKS_TO]->(p)
             RETURN p.title AS title, p.content AS content,
                    p.createdAt AS createdAt, p.updatedAt AS updatedAt,
+                   p.color AS color,
                    collect(DISTINCT linked.title) AS links,
                    collect(DISTINCT backlinker.title) AS backlinks
             """,
@@ -64,6 +65,7 @@ def _get_page(username: str, title: str):
             content=record["content"] or "",
             createdAt=record["createdAt"],
             updatedAt=record["updatedAt"],
+            color=record["color"] or "#00e5ff",
             links=[link for link in record["links"] if link],
             backlinks=[b for b in record["backlinks"] if b],
         )
@@ -102,9 +104,9 @@ def create_page(page: PageCreate, username: str = Depends(get_current_user)):
                 """
                 MATCH (u:User {username: $username})
                 MERGE (u)-[:OWNS]->(p:Page {title: $title})
-                SET p.content = $content, p.createdAt = $now, p.updatedAt = $now
+                SET p.content = $content, p.color = $color, p.createdAt = $now, p.updatedAt = $now
                 """,
-                username=username, title=page.title, content=page.content, now=now,
+                username=username, title=page.title, content=page.content, color=page.color, now=now,
             )
             sync_links(tx, username, page.title, page.content)
 
@@ -125,9 +127,14 @@ def update_page(title: str, page: PageUpdate, username: str = Depends(get_curren
             raise HTTPException(status_code=404, detail="Page not found")
 
         def _update(tx):
+            set_clause = "SET p.content = $content, p.updatedAt = $now"
+            params = dict(username=username, title=title, content=page.content, now=now)
+            if page.color is not None:
+                set_clause += ", p.color = $color"
+                params["color"] = page.color
             tx.run(
-                "MATCH (u:User {username: $username})-[:OWNS]->(p:Page {title: $title}) SET p.content = $content, p.updatedAt = $now",
-                username=username, title=title, content=page.content, now=now,
+                f"MATCH (u:User {{username: $username}})-[:OWNS]->(p:Page {{title: $title}}) {set_clause}",
+                **params,
             )
             sync_links(tx, username, title, page.content)
 

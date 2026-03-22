@@ -13,7 +13,8 @@ Inspired by [Logseq](https://github.com/logseq/logseq), an open-source knowledge
 - **Search** — fulltext search across all your pages
 - **Backlinks** — see which pages link to the current page
 - **3D graph view** — interactive force-directed graph using Three.js with glowing nodes and orbit controls
-- **AI assistant** — streaming chat with context from your notes; supports Ollama, OpenAI, and Anthropic
+- **Node color coding** — assign a color to any page; nodes in Graph View reflect your chosen colors
+- **AI assistant** — streaming chat with context from your notes; supports Ollama, OpenAI, Anthropic, and Gemini
 - **WebXR VR mode** — explore your knowledge graph in VR with controller raycasting
 - **User accounts** — signup/login with JWT auth; each user's pages are isolated
 - **Bulk delete** — multi-select pages in the sidebar and delete them in one action

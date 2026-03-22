@@ -202,10 +202,47 @@ async def ask_question(req: AskRequest, username: str = Depends(get_current_user
                     except json.JSONDecodeError:
                         pass
 
+    async def stream_gemini():
+        yield json.dumps({"type": "context", "pages": context_titles}) + "\n"
+        if not api_key:
+            yield json.dumps({"type": "token", "content": "Error: Google AI API key is required."}) + "\n"
+            yield json.dumps({"type": "done"}) + "\n"
+            return
+        gemini_model = model or "gemini-2.5-flash"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{gemini_model}:streamGenerateContent?alt=sse&key={api_key}"
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            async with client.stream(
+                "POST",
+                url,
+                headers={"Content-Type": "application/json"},
+                json={
+                    "system_instruction": {"parts": [{"text": system_prompt}]},
+                    "contents": [{"role": "user", "parts": [{"text": req.question}]}],
+                },
+            ) as response:
+                async for line in response.aiter_lines():
+                    line = line.strip()
+                    if not line or not line.startswith("data: "):
+                        continue
+                    try:
+                        data = json.loads(line[6:])
+                        candidates = data.get("candidates", [])
+                        if candidates:
+                            parts = candidates[0].get("content", {}).get("parts", [])
+                            for part in parts:
+                                text = part.get("text", "")
+                                if text:
+                                    yield json.dumps({"type": "token", "content": text}) + "\n"
+                    except json.JSONDecodeError:
+                        pass
+        yield json.dumps({"type": "done"}) + "\n"
+
     if provider == "openai":
         streamer = stream_openai()
     elif provider == "anthropic":
         streamer = stream_anthropic()
+    elif provider == "gemini":
+        streamer = stream_gemini()
     else:
         streamer = stream_ollama()
 
